@@ -1,0 +1,83 @@
+version: 1
+platform: aws
+drills:
+  - scenario_id: AWS1_glue_schema_drift
+    enabled: true
+    injection: "Parquet schema mismatch in landing data."
+    expected_rca: "Schema drift not handled."
+    expected_fix: "Schema reconciliation + quarantine."
+    stop_conditions: ["diff > 300 lines", "changes > 5 files"]
+    verify_steps:
+      - "Job completes with quarantined bad rows."
+  - scenario_id: AWS2_s3_path_collision
+    enabled: true
+    injection: "Two runs write to same partition."
+    expected_rca: "Missing run_id isolation."
+    expected_fix: "Partition by run_id or atomic output."
+    stop_conditions: ["diff > 300 lines"]
+    verify_steps:
+      - "Outputs isolated per run."
+  - scenario_id: AWS3_cloudwatch_transient
+    enabled: false
+    injection: "Simulate intermittent network timeout."
+    expected_rca: "Transient failure."
+    expected_fix: "Classify transient; no PR until repeated."
+    stop_conditions: ["Patchit must refuse to change code"]
+    verify_steps:
+      - "PATCHIT reports transient and refuses."
+  - scenario_id: AWS4_iam_access_denied
+    enabled: false
+    injection: "Remove Glue role permission to S3."
+    expected_rca: "Access denied on S3."
+    expected_fix: "Recommend least-privilege IAM update (report-only)."
+    stop_conditions: ["do not auto-apply IAM"]
+    verify_steps:
+      - "PATCHIT reports and refuses."
+  - scenario_id: AWS5_data_quality_silent
+    enabled: false
+    injection: "Job succeeds but row count off."
+    expected_rca: "Missing canary checks."
+    expected_fix: "Add row-count + checksum assertions."
+    stop_conditions: ["diff > 300 lines"]
+    verify_steps:
+      - "Canary fails if counts mismatch."
+  - scenario_id: AWS6_large_patch_guardrail
+    enabled: false
+    injection: "Failure would require broad refactor."
+    expected_rca: "Overly large change required."
+    expected_fix: "Report-only; refuse."
+    stop_conditions: ["Patchit must refuse large diff"]
+    verify_steps:
+      - "PATCHIT refuses and records evidence."
+  - scenario_id: AWS7_manifest_missing
+    enabled: false
+    injection: "Manifest marker missing after job success."
+    expected_rca: "No completion marker for downstream."
+    expected_fix: "Add manifest write + validation."
+    stop_conditions: ["diff > 300 lines"]
+    verify_steps:
+      - "Manifest present on success."
+  - scenario_id: AWS8_partition_overwrite
+    enabled: false
+    injection: "Partition overwrite removes prior data."
+    expected_rca: "Unsafe overwrite mode."
+    expected_fix: "Use append + run_id isolation."
+    stop_conditions: ["destructive delete"]
+    verify_steps:
+      - "Prior partitions preserved."
+  - scenario_id: AWS7_partition_skew
+    enabled: false
+    injection: "One partition receives 95% of rows."
+    expected_rca: "Skewed partitioning strategy."
+    expected_fix: "Repartition by hash/salt key."
+    stop_conditions: ["diff > 300 lines"]
+    verify_steps:
+      - "Partition sizes balanced."
+  - scenario_id: AWS8_bad_manifest
+    enabled: false
+    injection: "Manifest references missing files."
+    expected_rca: "Bad manifest generation."
+    expected_fix: "Atomic manifest write + validation."
+    stop_conditions: ["diff > 300 lines"]
+    verify_steps:
+      - "Manifest validates before publish."

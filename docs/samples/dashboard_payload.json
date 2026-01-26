@@ -1,0 +1,12 @@
+{
+  "run_id": "run_AWS1_glue_schema_drift",
+  "platform": "aws",
+  "scenario_id": "AWS1_glue_schema_drift",
+  "event_type": "remediation.completed",
+  "confidence": 0.6,
+  "fixed": true,
+  "rca_category": "schema_drift",
+  "ts": "2026-01-24T00:02:00Z",
+  "repo_key": "patchit-aws-labs",
+  "artifacts": ["evidence_pack.json", "patch.diff"]
+}

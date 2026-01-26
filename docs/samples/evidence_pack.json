@@ -1,0 +1,21 @@
+{
+  "platform": "aws",
+  "repo_path": "/path/to/patchit-aws-labs",
+  "git_sha": "local",
+  "job_id": "glue_demo_job",
+  "run_id": "run_AWS1_glue_schema_drift",
+  "timestamp": "2026-01-24T00:00:00Z",
+  "failure_signature": "AWS1_glue_schema_drift",
+  "log_excerpt": "Parquet schema mismatch in input files",
+  "suspected_root_cause": "Schema drift not handled",
+  "impacted_assets": ["s3://landing/events", "s3://curated/events"],
+  "proposed_fix_summary": "Add schema reconciliation + quarantine bad rows",
+  "diff_preview": "diff --git a/jobs/glue_job.py b/jobs/glue_job.py\n...",
+  "confidence": 0.6,
+  "stop_condition_evaluation": [],
+  "rollback_plan": "Revert PR and re-run Glue job",
+  "verification": {
+    "commands": ["python jobs/glue_job.py"],
+    "results": "pending"
+  }
+}
