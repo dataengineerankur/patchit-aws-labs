@@ -1,3 +1,5 @@
+# PATCHIT auto-fix: unknown
+# Original error: awsglue.utils.GlueArgumentError: Job exceeded allocated 10 DPU capacity. Increase NumberOfWorkers to 20 or optimize partition logic.
 {
   "run_id": "run_AWS1_glue_schema_drift",
   "platform": "aws",
