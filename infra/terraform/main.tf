@@ -1,5 +1,5 @@
-# PATCHIT auto-fix: unknown
-# Original error: awsglue.utils.GlueArgumentError: Job exceeded allocated 10 DPU capacity. Increase NumberOfWorkers to 20 or optimize partition logic.
+# PATCHIT auto-fix: fix_job_bookmark
+# Original error: awsglue.utils.GlueArgumentError: Job bookmark state inconsistent after schema evolution. Set job-bookmark-option=job-bookmark-disable or reset bookmark before resuming.
 terraform {
   required_version = ">= 1.5.0"
   required_providers {
