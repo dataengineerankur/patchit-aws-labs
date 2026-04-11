@@ -1,0 +1,243 @@
+{
+  "Comment": "PatchIt Analytics Orchestrator — runs RFM segmentation, anomaly detection, and conditional alerting pipeline",
+  "StartAt": "StartRFMSegmentation",
+  "States": {
+
+    "StartRFMSegmentation": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync:2",
+      "Parameters": {
+        "JobName": "patchit-customer-rfm-segmentation",
+        "Arguments": {
+          "--customers_path":     "s3://patchit-glue-labs-244206439389/raw/customers/customers.csv",
+          "--orders_path":        "s3://patchit-glue-labs-244206439389/raw/orders/orders.csv",
+          "--output_path":        "s3://patchit-glue-labs-244206439389/processed/rfm_segments/",
+          "--recency_weight":     "0.3",
+          "--frequency_weight":   "0.35",
+          "--monetary_weight":    "0.35"
+        }
+      },
+      "ResultPath": "$.rfm_job_result",
+      "Retry": [
+        {
+          "ErrorEquals": ["Glue.ConcurrentRunsExceededException"],
+          "IntervalSeconds": 60,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        },
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.rfm_error",
+          "Next": "HandleRFMFailure"
+        }
+      ],
+      "Next": "PostRFMWait"
+    },
+
+    "PostRFMWait": {
+      "Type": "Wait",
+      "Seconds": 15,
+      "Comment": "Brief stabilisation delay to allow S3 consistency for downstream reads",
+      "Next": "ParallelAnalyticsStage"
+    },
+
+    "ParallelAnalyticsStage": {
+      "Type": "Parallel",
+      "Comment": "Run anomaly detection and segment health check concurrently",
+      "Branches": [
+        {
+          "StartAt": "StartAnomalyDetector",
+          "States": {
+            "StartAnomalyDetector": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync:2",
+              "Parameters": {
+                "JobName": "patchit-revenue-anomaly-detector",
+                "Arguments": {
+                  "--rfm_segments_path":        "s3://patchit-glue-labs-244206439389/processed/rfm_segments/",
+                  "--revenue_daily_path":       "s3://patchit-glue-labs-244206439389/raw/revenue_daily/revenue_daily.csv",
+                  "--alerts_output_path":       "s3://patchit-glue-labs-244206439389/processed/revenue_alerts/",
+                  "--zscore_threshold":         "2.5",
+                  "--bollinger_std_multiplier": "2.0",
+                  "--lookback_days":            "30"
+                }
+              },
+              "ResultPath": "$.anomaly_job_result",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Glue.ConcurrentRunsExceededException"],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2.0
+                },
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "IntervalSeconds": 30,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.anomaly_error",
+                  "Next": "AnomalyJobFailed"
+                }
+              ],
+              "End": true
+            },
+            "AnomalyJobFailed": {
+              "Type": "Pass",
+              "Parameters": {
+                "anomaly_job_status": "FAILED",
+                "anomaly_count": 0,
+                "critical_count": 0
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "CollectPipelineMetrics",
+          "States": {
+            "CollectPipelineMetrics": {
+              "Type": "Pass",
+              "Comment": "Simulates a Lambda metrics aggregation — replaced with Pass for portability",
+              "Parameters": {
+                "pipeline_run_id.$": "$$.Execution.Name",
+                "rfm_job_name": "patchit-customer-rfm-segmentation",
+                "anomaly_job_name": "patchit-revenue-anomaly-detector",
+                "execution_start.$": "$$.Execution.StartTime",
+                "metrics_source": "glue_cloudwatch"
+              },
+              "ResultPath": "$.pipeline_metrics",
+              "End": true
+            }
+          }
+        }
+      ],
+      "ResultPath": "$.parallel_results",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.parallel_error",
+          "Next": "HandleParallelFailure"
+        }
+      ],
+      "Next": "InspectAnomalyResults"
+    },
+
+    "InspectAnomalyResults": {
+      "Type": "Pass",
+      "Comment": "Extracts anomaly count from parallel branch output for routing decision",
+      "Parameters": {
+        "anomaly_job_status.$":  "$.parallel_results[0].anomaly_job_result.JobRunState",
+        "rfm_job_status.$":      "$.rfm_job_result.JobRunState",
+        "pipeline_metrics.$":    "$.parallel_results[1].pipeline_metrics",
+        "anomaly_count":         0,
+        "critical_count":        0
+      },
+      "ResultPath": "$.inspection",
+      "Next": "AnomalyCountRouter"
+    },
+
+    "AnomalyCountRouter": {
+      "Type": "Choice",
+      "Comment": "Routes to escalation or nominal completion based on anomaly severity",
+      "Choices": [
+        {
+          "Variable": "$.inspection.anomaly_job_status",
+          "StringEquals": "FAILED",
+          "Next": "HandleParallelFailure"
+        },
+        {
+          "Variable": "$.inspection.critical_count",
+          "NumericGreaterThan": 0,
+          "Next": "EscalateCriticalAnomalies"
+        },
+        {
+          "Variable": "$.inspection.anomaly_count",
+          "NumericGreaterThan": 5,
+          "Next": "EscalateHighVolumeAnomalies"
+        }
+      ],
+      "Default": "RecordPipelineCompletion"
+    },
+
+    "EscalateCriticalAnomalies": {
+      "Type": "Pass",
+      "Comment": "Placeholder: in production this publishes to SNS critical alert topic",
+      "Parameters": {
+        "alert_type": "CRITICAL_REVENUE_ANOMALY",
+        "escalation_channel": "patchit-ops-critical",
+        "source_step": "revenue_anomaly_detector",
+        "action_required": true,
+        "payload.$": "$.inspection"
+      },
+      "ResultPath": "$.escalation_result",
+      "Next": "RecordPipelineCompletion"
+    },
+
+    "EscalateHighVolumeAnomalies": {
+      "Type": "Pass",
+      "Comment": "Placeholder: publishes to SNS high-volume alert topic for analyst review",
+      "Parameters": {
+        "alert_type": "HIGH_VOLUME_ANOMALY",
+        "escalation_channel": "patchit-ops-alerts",
+        "source_step": "revenue_anomaly_detector",
+        "action_required": false,
+        "payload.$": "$.inspection"
+      },
+      "ResultPath": "$.escalation_result",
+      "Next": "RecordPipelineCompletion"
+    },
+
+    "RecordPipelineCompletion": {
+      "Type": "Pass",
+      "Parameters": {
+        "pipeline_status": "SUCCEEDED",
+        "execution_name.$": "$$.Execution.Name",
+        "completed_at.$":   "$$.State.EnteredTime",
+        "rfm_status.$":     "$.inspection.rfm_job_status",
+        "anomaly_status.$": "$.inspection.anomaly_job_status"
+      },
+      "ResultPath": "$.completion_record",
+      "End": true
+    },
+
+    "HandleRFMFailure": {
+      "Type": "Pass",
+      "Parameters": {
+        "pipeline_status": "FAILED",
+        "failed_stage": "StartRFMSegmentation",
+        "error.$": "$.rfm_error"
+      },
+      "ResultPath": "$.failure_record",
+      "Next": "PipelineAborted"
+    },
+
+    "HandleParallelFailure": {
+      "Type": "Pass",
+      "Parameters": {
+        "pipeline_status": "PARTIAL_FAILURE",
+        "failed_stage": "ParallelAnalyticsStage"
+      },
+      "ResultPath": "$.failure_record",
+      "Next": "PipelineAborted"
+    },
+
+    "PipelineAborted": {
+      "Type": "Fail",
+      "Error": "PatchItAnalyticsPipelineError",
+      "Cause": "One or more pipeline stages failed. Check CloudWatch Logs for the Glue job run details."
+    }
+  }
+}
