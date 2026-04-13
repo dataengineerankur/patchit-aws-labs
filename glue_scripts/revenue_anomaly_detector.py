@@ -118,7 +118,7 @@ rfm_df = rfm_dyf.toDF()
 # Build per-segment aggregate metrics for context enrichment
 segment_metrics = (
     rfm_df
-    .groupBy("rfm_segment")
+    .groupBy("segment")
     .agg(
         F.count("customer_id").alias("segment_customer_count"),
         F.round(F.avg("monetary_value"), 2).alias("segment_avg_monetary"),
@@ -126,7 +126,6 @@ segment_metrics = (
         F.round(F.avg("churn_risk_score"), 3).alias("segment_avg_churn_risk"),
         F.sum("monetary_value").alias("segment_total_ltv"),
     )
-    .withColumnRenamed("rfm_segment", "segment")
 )
 logger.info("Computed segment metrics for %d segments", segment_metrics.count())
 
