@@ -173,11 +173,14 @@ revenue_windowed = (
     .withColumn("prev_day_revenue",
         F.lag("revenue_amount", 1).over(date_rank_window))
     .withColumn("pct_change_1d",
-        F.round(
-            (F.col("revenue_amount") - F.col("prev_day_revenue"))
-            / F.when(F.col("prev_day_revenue") != 0, F.col("prev_day_revenue")).otherwise(F.lit(1.0))
-            * F.lit(100.0),
-            4
+        F.coalesce(
+            F.round(
+                (F.col("revenue_amount") - F.col("prev_day_revenue"))
+                / F.when(F.col("prev_day_revenue") != 0, F.col("prev_day_revenue")).otherwise(F.lit(1.0))
+                * F.lit(100.0),
+                4
+            ),
+            F.lit(0.0)
         )
     )
 
