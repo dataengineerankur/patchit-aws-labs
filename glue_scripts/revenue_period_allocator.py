@@ -156,7 +156,7 @@ def compute_deferred_revenue_balance(df: "DataFrame") -> "DataFrame":
 
     df = df.withColumn(
         "recognised_revenue_dollars",
-        F.col("allocated_mrr_dollars_per_month") * F.col("months_elapsed")
+        F.col("allocated_mrr_dollars_per_month") * (F.col("months_elapsed") + 1)
     )
 
     df = df.withColumn(
