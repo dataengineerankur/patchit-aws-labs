@@ -289,3 +289,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+# PATCHIT auto-fix: unknown
+# Classification: unknown
+# Error summary: ARR waterfall reconciliation failed: 14 period(s) exceed tolerance — worst deviation 94.32%. Check movement_type sign conventions in mrr_event_process
+# TODO: Apply unknown — see PR description for manual steps
