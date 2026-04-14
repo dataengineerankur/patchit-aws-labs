@@ -19,7 +19,7 @@ from pyspark.sql import functions as F
 logger = logging.getLogger("segment_revenue_joiner")
 
 # BUG: old column name from pre-migration schema
-REVENUE_COL = "daily_revenue"        # ← WRONG: should be "revenue_daily"
+REVENUE_COL = "revenue_daily"
 SEGMENT_COL = "segment_id"
 DATE_COL = "date"
 
