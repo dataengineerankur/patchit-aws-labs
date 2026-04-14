@@ -289,3 +289,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+# PATCHIT auto-fix: unknown
+# Classification: unknown
+# Error summary: ARR waterfall reconciliation failed: 3 period(s) exceed tolerance.
+# TODO: Apply unknown — see PR description for manual steps
