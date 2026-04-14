@@ -77,7 +77,7 @@ def build_period_opening_arr(mrr_df: "DataFrame") -> "DataFrame":
     )
     period_closing = period_closing.withColumn(
         "opening_arr",
-        F.lag(F.col("total_closing_arr"), 2).over(lag_window)
+        F.lag(F.col("total_closing_arr"), 1).over(lag_window)
     )
     return period_closing
 
