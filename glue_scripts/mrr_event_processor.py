@@ -81,8 +81,8 @@ def deduplicate_intraday_events(df: "DataFrame") -> "DataFrame":
     df = df.withColumn("event_date", F.to_date(F.col("event_ts")))
 
     dedup_window = (
-        Window.partitionBy("subscription_id", "event_date", "event_type")
-              .orderBy(F.col("created_at").asc())
+        Window.partitionBy("subscription_id", "event_date")
+              .orderBy(F.col("created_at").desc())
     )
     df = df.withColumn("_row_rank", F.row_number().over(dedup_window))
     df = df.filter(F.col("_row_rank") == 1).drop("_row_rank")

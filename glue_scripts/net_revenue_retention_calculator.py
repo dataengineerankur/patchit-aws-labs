@@ -117,7 +117,7 @@ def compute_rolling_nrr(cohort_df: "DataFrame") -> "DataFrame":
     roll_window = (
         Window.partitionBy(["cohort_month"] + COHORT_SLICE_DIMS)
               .orderBy(F.col("cohort_index").asc())
-              .rowsBetween(-ROLLING_WINDOW_MONTHS + 1, 0)
+              .rowsBetween(-ROLLING_WINDOW_MONTHS, 0)
     )
 
     cohort_df = cohort_df.withColumn(

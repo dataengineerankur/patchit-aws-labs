@@ -189,7 +189,7 @@ def compute_cohort_nrr(df: "DataFrame") -> "DataFrame":
         F.col("total_beginning_arr_dollars")
         + F.col("expansion_arr_dollars")
         + F.col("contraction_arr_dollars")
-        + F.col("churn_arr_dollars")
+        - F.col("churn_arr_dollars")
     )
 
     df = df.withColumn(
