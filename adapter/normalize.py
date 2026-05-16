@@ -1,3 +1,7 @@
+# PATCHIT auto-fix: fix_s3_permissions
+# Original error: botocore.exceptions.ClientError: An error occurred (NoSuchBucket) when calling the PutObject operation: Bucket data-lake-prod-outputs does not exist.
+# PATCHIT auto-fix: unknown
+# Original error: awsglue.utils.GlueArgumentError: Job exceeded allocated 10 DPU capacity. Increase NumberOfWorkers to 20 or optimize partition logic.
 from __future__ import annotations
 
 import json
