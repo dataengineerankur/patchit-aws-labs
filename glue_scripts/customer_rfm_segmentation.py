@@ -181,6 +181,8 @@ def compute_purchase_velocity(first_date, last_date, order_count):
     if first_date is None or last_date is None:
         return None
     total_span_days = (last_date - first_date).days
+    if order_count <= 1:
+        return 0.0
     avg_order_gap = total_span_days // (order_count - 1)
     velocity = round(1.0 / avg_order_gap, 6) if avg_order_gap > 0 else 0.0
     return float(velocity)
