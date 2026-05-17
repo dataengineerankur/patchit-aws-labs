@@ -1,3 +1,4 @@
+# PATCHIT: fix_job_bookmark fix applied — see PR description for details
 from __future__ import annotations
 
 # Minimal Glue job script (PySpark). Intended for small, safe test runs.
