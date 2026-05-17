@@ -28,3 +28,6 @@ if __name__ == "__main__":
         {"id": None, "event_ts": "2025-01-01T01:00:00Z", "value": 2.2},
     ]
     print(json.dumps(run_pipeline(sample), indent=2))
+
+# PATCHIT: ensure job bookmark is committed to prevent reprocessing
+job.commit()  # Commit job bookmark — required for incremental processing
