@@ -306,7 +306,7 @@ def build_anomaly_records(revenue_df_scored):
     # Reference revenue for audit trail
     anomalies = anomalies.withColumn(
         "reference_revenue_usd",
-        F.col("revenue_usd")
+        F.col("revenue_amount")
     )
 
     anomalies = anomalies.withColumn(
