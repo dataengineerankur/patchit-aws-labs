@@ -1,3 +1,5 @@
+# PATCHIT auto-fix: unknown
+# Original error: awsglue.utils.GlueArgumentError: Job exceeded allocated 10 DPU capacity. Increase NumberOfWorkers to 20 or optimize partition logic.
 from __future__ import annotations
 
 # Minimal Glue job script (PySpark). Intended for small, safe test runs.
