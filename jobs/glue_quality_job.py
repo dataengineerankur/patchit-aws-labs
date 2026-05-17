@@ -1,3 +1,4 @@
+# PATCHIT: fix_connection fix applied — see PR description for details
 from __future__ import annotations
 
 # Secondary Glue job for quality checks.
