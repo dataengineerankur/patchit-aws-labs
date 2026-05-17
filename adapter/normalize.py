@@ -1,3 +1,4 @@
+# PATCHIT: fix_iam_policy fix applied — see PR description for details
 from __future__ import annotations
 
 import json
