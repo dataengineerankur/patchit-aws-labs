@@ -28,3 +28,17 @@ if __name__ == "__main__":
         {"id": None, "event_ts": "2025-01-01T01:00:00Z", "value": 2.2},
     ]
     print(json.dumps(run_pipeline(sample), indent=2))
+
+
+# PATCHIT: increase Glue DPU capacity
+import boto3 as _boto3
+_glue_client = _boto3.client('glue')
+_glue_client.update_job(
+    JobName=args.get('JOB_NAME', 'silver_customers'),
+    JobUpdate={
+        'MaxCapacity': 20,
+        'NumberOfWorkers': 10,
+        'WorkerType': 'G.2X',
+        'Timeout': 2880,
+    }
+)
